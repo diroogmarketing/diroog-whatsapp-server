@@ -77,9 +77,17 @@ async function startWhatsApp() {
       if (shouldReconnect) {
         setTimeout(startWhatsApp, 3000);
       } else {
-        // Session expirée → supprimer et redemander QR
-        fs.rmSync(path.join(__dirname, "session"), { recursive: true, force: true });
-        setTimeout(startWhatsApp, 3000);
+        // Session expirée → vider les fichiers (pas le dossier = volume Railway)
+        try {
+          const files = fs.readdirSync(sessionDir);
+          for (const file of files) {
+            fs.rmSync(path.join(sessionDir, file), { recursive: true, force: true });
+          }
+          console.log("🗑️ Session vidée, nouveau QR dans 3s...");
+        } catch (e) {
+          console.error("Erreur nettoyage session:", e.message);
+        }
+        setTimeout(startWithRetry, 3000);
       }
     }
   });
