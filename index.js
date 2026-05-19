@@ -34,7 +34,14 @@ async function startWhatsApp() {
   if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir);
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-  const { version } = await fetchLatestBaileysVersion();
+  let version;
+  try {
+    const result = await fetchLatestBaileysVersion();
+    version = result.version;
+  } catch {
+    version = [2, 3000, 1015901307]; // version de secours si réseau indisponible
+    console.warn("⚠️ fetchLatestBaileysVersion échoué, version de secours utilisée");
+  }
 
   sock = makeWASocket({
     version,
@@ -163,7 +170,19 @@ app.get("/", (req, res) => {
 });
 
 // ─── Démarrage ────────────────────────────────────────────────────────────────
+// Relance robuste avec backoff
+async function startWithRetry(attempt = 1) {
+  try {
+    await startWhatsApp();
+  } catch (err) {
+    const delay = Math.min(attempt * 5000, 30000);
+    console.error(`❌ Erreur démarrage WhatsApp (tentative ${attempt}): ${err.message}`);
+    console.log(`🔄 Nouvelle tentative dans ${delay / 1000}s...`);
+    setTimeout(() => startWithRetry(attempt + 1), delay);
+  }
+}
+
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
-  startWhatsApp();
+  startWithRetry();
 });
