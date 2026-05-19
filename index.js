@@ -48,7 +48,7 @@ async function startWhatsApp() {
     auth: state,
     logger: pino({ level: "silent" }),
     printQRInTerminal: false,
-    browser: ["Diroog CRM", "Chrome", "1.0.0"],
+    browser: ["", "Chrome", ""],
   });
 
   // Sauvegarde des credentials
